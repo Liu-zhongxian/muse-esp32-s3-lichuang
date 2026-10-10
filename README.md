@@ -16,6 +16,15 @@ limitations under the License.
 
 # Muse Gadgets
 
+## Lichuang ESP32-S3 UI adaptation / 立创实战派适配
+
+This checkout includes a local port for the Lichuang SZP ESP32-S3 (N16R8):
+320×240 landscape touch UI, persistent Chinese/English switching, and fixes
+for display initialization and provisioning memory. See the
+[中文使用说明](README.zh-CN.md) for setup, screenshots and troubleshooting.
+End-to-end cloud chat is not yet verified on this board. The upstream SDK
+overview follows below.
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/images/muse-gadgets-dark.png">

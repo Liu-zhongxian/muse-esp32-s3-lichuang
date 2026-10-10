@@ -39,6 +39,7 @@
 #include "muse_mem.h"
 #include "muse_menu.h"
 #include "muse_settings.h"
+#include "muse_i18n.h"
 #include "muse_state.h"
 #include "muse_ui.h"
 #include "muse_voice.h"
@@ -91,14 +92,14 @@ static void power_off(void)
     muse_state_set_progress(0);
     muse_state_set_level(0);
     muse_state_set_mode(MUSE_MODE_OFF);
-    muse_state_set_caption("GOODBYE!");
+    muse_state_set_caption(muse_tr("GOODBYE!"));
     vTaskDelay(pdMS_TO_TICKS(GOODBYE_MS));
     esp_err_t err = muse_board->power_off();
     /* Only reached if the board couldn't power off. */
     vTaskDelay(pdMS_TO_TICKS(500));
     ESP_LOGE(TAG, "power-off failed (%s)", esp_err_to_name(err));
     muse_state_set_mode(MUSE_MODE_IDLE);
-    muse_state_set_caption("COULDN'T POWER OFF");
+    muse_state_set_caption(muse_tr("COULDN'T POWER OFF"));
 }
 
 static void set_asleep(bool asleep, const char *why)
@@ -123,9 +124,9 @@ static void toggle_phone_setup(void)
     muse_ble_status_t b;
     muse_ble_status(&b);
     if (on && b.name[0]) {
-        muse_state_set_caption("PHONE SETUP: %s", b.name);
+        muse_state_set_caption(muse_tr("PHONE SETUP: %s"), b.name);
     } else {
-        muse_state_set_caption("PHONE SETUP %s", on ? "ON" : "OFF");
+        muse_state_set_caption(muse_tr("PHONE SETUP %s"), on ? muse_tr("ON") : muse_tr("OFF"));
     }
 }
 
@@ -163,7 +164,7 @@ static void aux_button(bool pressed, bool edge)
         if (held == HINT_TICKS) {
             uint32_t v = UINT32_MAX;
             muse_state_caption(saved_caption, sizeof(saved_caption), &v);
-            muse_state_set_caption("HOLD TO POWER OFF");
+            muse_state_set_caption(muse_tr("HOLD TO POWER OFF"));
             hinted = true;
         } else if (held == LONG_TICKS) {
             swallow = true;

@@ -38,6 +38,7 @@ if(CONFIG_MUSE_ENABLED)
         "muse_settings.c"
         "muse_settings_ui.c"
         "muse_text.c"
+        "muse_i18n.c"
         "muse_keypad.c"
         "muse_lv_mem.c"
         "muse_link.c"
@@ -88,6 +89,8 @@ if(CONFIG_MUSE_ENABLED)
         list(APPEND srcs "boards/board_m5stack_cores3.c")
     elseif(CONFIG_MUSE_BOARD_M5STACK_CORE2)
         list(APPEND srcs "boards/board_m5stack_core2.c")
+    elseif(CONFIG_MUSE_BOARD_LICHUANG_SZP)
+        list(APPEND srcs "boards/board_lichuang_szp.c")
     elseif(CONFIG_MUSE_BOARD_FNK0104B)
         list(APPEND srcs "boards/board_fnk0104b.c")
     elseif(CONFIG_MUSE_BOARD_GUITION_JC3248W535)
