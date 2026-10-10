@@ -43,6 +43,7 @@
 #include "muse_settings_ui.h"
 #include "muse_state.h"
 #include "muse_text.h"
+#include "muse_i18n.h"
 #include "muse_wifi.h"
 #if CONFIG_MUSE_WATCHER_CAMERA
 #include "boards/watcher_camera.h"
@@ -467,6 +468,30 @@ static const lv_font_t *font_pick(const lv_font_t *full, const lv_font_t *compac
 LV_FONT_DECLARE(muse_font_cjk_16)
 #endif
 
+const lv_font_t *muse_ui_font(const lv_font_t *font)
+{
+#if CONFIG_MUSE_CJK_FONT
+    static const lv_font_t *const bases[] = {
+        &lv_font_unscii_8, &lv_font_unscii_16, &lv_font_montserrat_14,
+        &lv_font_montserrat_16, &lv_font_montserrat_20, &lv_font_montserrat_28,
+#if LV_FONT_MONTSERRAT_12
+        &lv_font_montserrat_12,
+#endif
+    };
+    static lv_font_t fonts[sizeof(bases) / sizeof(bases[0])];
+    for (unsigned i = 0; i < sizeof(bases) / sizeof(bases[0]); i++) {
+        if (font != bases[i]) continue;
+        if (!fonts[i].get_glyph_dsc) {
+            fonts[i] = *font;
+            fonts[i].fallback = &muse_font_cjk_16;
+            fonts[i].line_height = LV_MAX(font->line_height, 16);
+        }
+        return &fonts[i];
+    }
+#endif
+    return font;
+}
+
 /* unscii-16 for captions and replies; with CONFIG_MUSE_CJK_FONT, a copy that
  * falls back to Unifont's 16x16 CJK, the same cell, for what unscii lacks. */
 static const lv_font_t *caption_font(void)
@@ -486,7 +511,7 @@ static const lv_font_t *caption_font(void)
 static lv_obj_t *make_label(lv_obj_t *parent, const lv_font_t *font, uint32_t color)
 {
     lv_obj_t *l = lv_label_create(parent);
-    lv_obj_set_style_text_font(l, font, 0);
+    lv_obj_set_style_text_font(l, muse_ui_font(font), 0);
     lv_obj_set_style_text_color(l, lv_color_hex(color), 0);
     lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_text(l, "");
@@ -532,12 +557,12 @@ static void on_speaker_event(lv_event_t *e)
         muse_settings_set_speaker_on(!on);
         show_speaker(!on);
         if (idle) {
-            muse_state_set_caption(on ? "SPEAKER OFF" : "SPEAKER ON");
+            muse_state_set_caption(on ? muse_tr("SPEAKER OFF") : muse_tr("SPEAKER ON"));
         }
         break;
     case LV_EVENT_SHORT_CLICKED:
         if (idle) {
-            muse_state_set_caption(on ? "HOLD TO MUTE" : "HOLD TO UNMUTE");
+            muse_state_set_caption(on ? muse_tr("HOLD TO MUTE") : muse_tr("HOLD TO UNMUTE"));
         }
         break;
     case LV_EVENT_RELEASED:
@@ -906,7 +931,7 @@ static void build_screen(void)
      * Muse app. update_chrome() fills it in, shortens it to the hex tail on a
      * screen too narrow for the whole thing, and empties it once paired. */
     s_name_lbl = make_label(face, s_small ? &lv_font_unscii_8 : &lv_font_unscii_16, COLOR_DIM);
-    lv_obj_align(s_name_lbl, LV_ALIGN_TOP_MID, 0, muse_board->rim_controls ? 88 : s_small ? 32 : 60 + s_dy);
+    lv_obj_align(s_name_lbl, LV_ALIGN_TOP_MID, 0, muse_board->rim_controls ? 88 : s_small ? (s_w > s_h && s_h >= 240 ? 40 : 32) : 60 + s_dy);
     if (muse_board->rim_controls) {
         /* Safe chord below the round panel's top, not the full 466 px width. */
         lv_obj_set_size(s_state_lbl, 280, lv_font_get_line_height(&lv_font_unscii_16));
@@ -932,8 +957,9 @@ static void build_screen(void)
         lv_obj_align(s_caption_lbl, LV_ALIGN_BOTTOM_MID, 0, (s_tall || s_tv) ? -30 : -3);
 #if CONFIG_MUSE_CJK_FONT
         /* CJK doesn't fit unscii-8's cell, so a reply with CJK in it fills the
-         * band one line at a time in the 16 px caption font instead. */
-        muse_state_set_cjk_page(s_w / lv_font_get_glyph_width(caption_font(), 'M', ' '), 1);
+         * band in the 16 px caption font instead. Landscape has two lines. */
+        muse_state_set_cjk_page(s_w / lv_font_get_glyph_width(caption_font(), 'M', ' '),
+                                s_w > s_h && s_h >= 240 ? 2 : 1);
 #endif
 
         s_bar = lv_obj_create(face);
@@ -1115,7 +1141,7 @@ static void build_overlays(void)
     lv_obj_set_style_radius(s_camera_hint, 18, 0);
     lv_obj_add_flag(s_camera_hint, LV_OBJ_FLAG_HIDDEN);
     lv_obj_t *hint_text = lv_label_create(s_camera_hint);
-    lv_label_set_text(hint_text, "TAP TO TAKE PHOTO");
+    lv_label_set_text(hint_text, muse_tr("TAP TO TAKE PHOTO"));
     lv_obj_center(hint_text);
     lv_obj_add_event_cb(s_camera_hint, on_camera_hint_clicked, LV_EVENT_CLICKED, NULL);
 #endif
@@ -1148,11 +1174,11 @@ static void build_overlays(void)
     lv_obj_remove_flag(s_pair, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(s_pair, LV_OBJ_FLAG_HIDDEN);
     s_pair_title = make_label(s_pair, font_pick(&lv_font_montserrat_20, FONT_COMPACT), COLOR_LIT);
-    lv_label_set_text(s_pair_title, "Pairing code");
+    lv_label_set_text(s_pair_title, muse_tr("Pairing code"));
     s_pair_code = make_label(s_pair, font_pick(&lv_font_montserrat_28, &lv_font_montserrat_20), COLOR_ACCENT);
     lv_obj_set_style_text_letter_space(s_pair_code, s_small ? 2 : 6, 0);
     s_pair_hint = make_label(s_pair, font_pick(&lv_font_montserrat_14, FONT_COMPACT), COLOR_DIM);
-    lv_label_set_text(s_pair_hint, s_small ? "Enter on phone" : "Enter it on your phone");
+    lv_label_set_text(s_pair_hint, s_small ? muse_tr("Enter on phone") : muse_tr("Enter it on your phone"));
     /* Wraps: "bottom right button" is wider than the AIPI's card. */
     lv_obj_set_width(s_pair_hint, lv_pct(100));
     lv_label_set_long_mode(s_pair_hint, LV_LABEL_LONG_MODE_WRAP);
@@ -1231,13 +1257,13 @@ static const char *idle_name(muse_wifi_state_t wifi)
         joined = true;
         return MODE_NAMES[MUSE_MODE_IDLE];
     case MUSE_WIFI_OFF:
-        return "WI-FI OFF";
+        return muse_tr("WI-FI OFF");
     case MUSE_WIFI_NO_NETWORK:
-        return "SET UP WI-FI";
+        return muse_tr("SET UP WI-FI");
     case MUSE_WIFI_NOT_NEARBY:
-        return "NO WI-FI";   /* none of the saved networks is in range */
+        return muse_tr("NO WI-FI");   /* none of the saved networks is in range */
     default:
-        return joined ? "RECONNECTING" : "CONNECTING";
+        return joined ? muse_tr("RECONNECTING") : muse_tr("CONNECTING");
     }
 }
 
@@ -1315,18 +1341,19 @@ static void update_chrome(float now)
         char code[24], hint[40];
         if (confirm) {
             if (!muse_board->audio_init) {
-                strlcpy(code, "Tap screen", sizeof(code));
-                strlcpy(hint, "Tap to confirm pairing", sizeof(hint));
+                strlcpy(code, muse_tr("Tap screen"), sizeof(code));
+                strlcpy(hint, muse_tr("Tap to confirm pairing"), sizeof(hint));
             } else {
-                strlcpy(code, s_small ? "Press" : "Press button", sizeof(code));
-                snprintf(hint, sizeof(hint), s_small ? "%s button" : "Press the %s button", muse_board->talk_button);
+                strlcpy(code, s_small ? muse_tr("Press") : muse_tr("Press button"), sizeof(code));
+                snprintf(hint, sizeof(hint), s_small ? muse_tr("%s button") : muse_tr("Press the %s button"), muse_board->talk_button);
             }
         } else {
             snprintf(code, sizeof(code), "%06lu", (unsigned long)b.passkey);
-            strlcpy(hint, s_small ? "Enter on phone" : "Enter it on your phone", sizeof(hint));
+            strlcpy(hint, s_small ? muse_tr("Enter on phone") : muse_tr("Enter it on your phone"), sizeof(hint));
         }
-        const char *title = confirm ? (s_small ? "Muse app" : "Pair with Muse app") : "Pairing code";
-        if (strcmp(code, lv_label_get_text(s_pair_code)) != 0) {
+        const char *title = confirm ? (s_small ? muse_tr("Muse app") : muse_tr("Pair with Muse app")) : muse_tr("Pairing code");
+        if (strcmp(code, lv_label_get_text(s_pair_code)) != 0 ||
+            strcmp(title, lv_label_get_text(s_pair_title)) != 0) {
             lv_label_set_text(s_pair_code, code);
             lv_label_set_text(s_pair_title, title);
             lv_label_set_text(s_pair_hint, hint);
@@ -1387,13 +1414,13 @@ static void update_power(float now)
     muse_power_t p = muse_state_power();
     char buf[32];
     if (p.battery_pct < 0) {
-        strlcpy(buf, p.usb ? (s_small ? "USB" : "USB POWER") : "", sizeof(buf));
+        strlcpy(buf, p.usb ? (s_small ? "USB" : muse_tr("USB POWER")) : "", sizeof(buf));
     } else if (s_small) {
         snprintf(buf, sizeof(buf), "%s%d%%", p.charging ? "+" : "", p.battery_pct);
     } else if (p.charging) {
-        snprintf(buf, sizeof(buf), "CHARGING %d%%", p.battery_pct);
+        snprintf(buf, sizeof(buf), muse_tr("CHARGING %d%%"), p.battery_pct);
     } else {
-        snprintf(buf, sizeof(buf), "BATTERY %d%%", p.battery_pct);
+        snprintf(buf, sizeof(buf), muse_tr("BATTERY %d%%"), p.battery_pct);
     }
     if (strcmp(buf, lv_label_get_text(s_power_lbl)) != 0) {
         lv_label_set_text(s_power_lbl, buf);
@@ -1403,7 +1430,7 @@ static void update_power(float now)
 static void update_status(muse_mode_t mode, float now)
 {
     uint32_t accent = muse_pixel_accent(mode);
-    const char *name = mode == MUSE_MODE_IDLE ? s_idle_name : MODE_NAMES[mode];
+    const char *name = muse_tr(mode == MUSE_MODE_IDLE ? s_idle_name : MODE_NAMES[mode]);
 
     if (name != s_shown_name) {
         lv_label_set_text(s_state_lbl, name);
@@ -1493,7 +1520,11 @@ static void update_status(muse_mode_t mode, float now)
         lv_obj_t *lbl = answer >= 0 ? s_reply_lbl : s_caption_lbl;
 #if CONFIG_MUSE_CJK_FONT
         if (s_small) {
-            lv_obj_set_style_text_font(s_caption_lbl, muse_text_has_cjk(caption) ? caption_font() : &lv_font_unscii_8, 0);
+            const lv_font_t *font = muse_text_has_cjk(caption) ? caption_font() : &lv_font_unscii_8;
+            lv_obj_set_style_text_font(s_caption_lbl, font, 0);
+            if (s_w > s_h && s_h >= 240) {
+                lv_obj_set_height(s_caption_lbl, 2 * lv_font_get_line_height(font) + 2 + 4);
+            }
         }
 #endif
         lv_label_set_text(lbl, caption);

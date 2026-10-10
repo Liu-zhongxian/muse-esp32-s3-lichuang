@@ -59,6 +59,8 @@ int muse_settings_brightness(void);     /* 10..100 */
 int muse_settings_sleep_s(void);        /* 0 = never */
 bool muse_settings_wifi_on(void);
 bool muse_settings_ble_on(void);
+bool muse_settings_chinese(void);
+void muse_settings_set_chinese(bool chinese);
 
 void muse_settings_wifi(char ssid[MUSE_SSID_MAX + 1], char pass[MUSE_PASS_MAX + 1]);
 void muse_settings_hatch_host(char out[MUSE_HOST_MAX + 1]);

@@ -39,6 +39,7 @@ static struct {
     uint16_t sleep_s;
     bool wifi_on;
     bool ble_on;
+    bool chinese;
     char ssid[MUSE_SSID_MAX + 1];
     char pass[MUSE_PASS_MAX + 1];
     char host[MUSE_HOST_MAX + 1];
@@ -52,6 +53,9 @@ static struct {
     .sleep_s = 120,
     .wifi_on = true,
     .host = DEFAULT_HOST,
+#if CONFIG_MUSE_DEFAULT_CHINESE
+    .chinese = true,
+#endif
 };
 
 static SemaphoreHandle_t s_lock;
@@ -114,6 +118,9 @@ esp_err_t muse_settings_init(void)
     }
 
     uint8_t b;
+    if (nvs_get_u8(s_nvs, "language", &b) == ESP_OK) {
+        s.chinese = b == 1;
+    }
     load_u8("volume", &s.volume);
     if (nvs_get_u8(s_nvs, "speaker", &b) == ESP_OK) {
         s.speaker_on = b;
@@ -154,6 +161,13 @@ int muse_settings_brightness(void) { return s.brightness; }
 int muse_settings_sleep_s(void) { return s.sleep_s; }
 bool muse_settings_wifi_on(void) { return s.wifi_on; }
 bool muse_settings_ble_on(void) { return s.ble_on; }
+bool muse_settings_chinese(void) { return s.chinese; }
+
+void muse_settings_set_chinese(bool chinese)
+{
+    s.chinese = chinese;
+    save_u8("language", chinese);
+}
 
 /* Home Link owns the saved networks (this is the first); the local copy is only a fallback. */
 void muse_settings_wifi(char ssid[MUSE_SSID_MAX + 1], char pass[MUSE_PASS_MAX + 1])

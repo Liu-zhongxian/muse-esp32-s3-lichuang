@@ -21,6 +21,10 @@
 
 #include "esp_err.h"
 #include "sdkconfig.h"
+#include "lvgl.h"
+
+/* UI fonts retain Latin/symbol glyphs and fall back to the bundled CJK font. */
+const lv_font_t *muse_ui_font(const lv_font_t *font);
 
 /*
  * Bring up the display and build the UI: the avatar on the first tile,
